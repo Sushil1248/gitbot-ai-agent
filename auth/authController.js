@@ -81,6 +81,9 @@ export const handleGitHubCallback = async (req, res) => {
       }
     );
 
+    console.log(tokenResponse.data, "TOKEN DATA"); // Debugging line to inspect the response
+    logger.info('Received access token response from GitHub.', { responseData: tokenResponse.data, service: 'AuthController' });
+
     const { access_token, scope, token_type, error, error_description } = tokenResponse.data;
 
     if (error) {

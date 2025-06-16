@@ -6,7 +6,7 @@ import logger from './logger.js';
 
 dotenv.config();
 
-const TOKEN_STORE_PATH = process.env.TOKEN_STORE_PATH || './data/tokens.json';
+const TOKEN_STORE_PATH = process.env.TOKEN_STORE_PATH || './data/tokens.enc';
 const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY; // Must be 32 bytes for aes-256-cbc
 
 const ALGORITHM = 'aes-256-cbc';

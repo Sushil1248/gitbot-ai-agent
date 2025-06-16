@@ -2,6 +2,8 @@ import simpleGit from 'simple-git';
 import logger from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs/promises';
+import { getToken } from '../utils/tokenManager.js'; // Added
+import { getUserProfile } from './githubService.js'; // Added
 
 const serviceName = 'GitService';
 
@@ -185,9 +187,46 @@ export async function getRemotes(directoryPath = '.') {
  */
 export async function addRemote(remoteName, remoteUrl, directoryPath = '.') {
     const git = simpleGit(directoryPath);
+    let finalRemoteUrl = remoteUrl;
+
+    // Check if it's a GitHub URL and we're setting 'origin'
+    if (remoteName === 'origin' && remoteUrl.includes('github.com')) {
+        logger.info(`Attempting to use token-authenticated URL for GitHub remote '${remoteName}'.`, { service: serviceName, path: directoryPath });
+        try {
+            logger.info('Fetching GitHub access token via TokenManager...', { service: serviceName, path: directoryPath });
+            const accessToken = await getToken('github_access_token');
+
+            logger.info('Fetching GitHub user profile via GitHubService...', { service: serviceName, path: directoryPath });
+            const userProfile = await getUserProfile(); // This might throw if token is invalid or not found by getHeaders
+
+            if (accessToken && userProfile && userProfile.login) {
+                const username = userProfile.login;
+                logger.info(`Successfully retrieved token and user profile ('${username}').`, { service: serviceName, path: directoryPath });
+                // Attempt to parse the original URL to get owner/repo
+                // Example: https://github.com/owner/repo.git or git@github.com:owner/repo.git
+                const urlParts = remoteUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)(\.git)?$/);
+                if (urlParts && urlParts.length >= 3) {
+                    const owner = urlParts[1];
+                    const repo = urlParts[2];
+                    finalRemoteUrl = `https://${username}:${accessToken}@github.com/${owner}/${repo}.git`;
+                    logger.info(`Constructed token-authenticated URL for remote ${remoteName}: ${finalRemoteUrl.replace(accessToken, '****')}`, { service: serviceName, path: directoryPath });
+                } else {
+                    logger.warn(`Could not parse owner/repo from GitHub URL: ${remoteUrl}. Using original URL.`, { service: serviceName, path: directoryPath });
+                }
+            } else {
+                let reason = [];
+                if (!accessToken) reason.push("GitHub access token not found");
+                if (!userProfile || !userProfile.login) reason.push("GitHub user profile or login not found");
+                logger.warn(`Failed to obtain necessary details for token-authenticated URL: ${reason.join(', ')}. Using original remote URL.`, { service: serviceName, path: directoryPath });
+            }
+        } catch (authError) {
+            logger.warn(`Error during token/profile retrieval for authenticated URL: ${authError.message}. Using original remote URL.`, { service: serviceName, path: directoryPath, error: authError.message });
+        }
+    }
+
     try {
-        await git.addRemote(remoteName, remoteUrl);
-        logger.info(`Added remote: ${remoteName} -> ${remoteUrl}`, { service: serviceName, path: directoryPath });
+        await git.addRemote(remoteName, finalRemoteUrl);
+        logger.info(`Added remote: ${remoteName} -> ${finalRemoteUrl.includes('@') ? finalRemoteUrl.substring(0, finalRemoteUrl.indexOf('@') + 1) + 'github.com/...' : finalRemoteUrl}`, { service: serviceName, path: directoryPath });
         return remoteName;
     } catch (error) {
         logger.error(`Error adding remote ${remoteName}:`, { message: error.message, stack: error.stack, service: serviceName });
