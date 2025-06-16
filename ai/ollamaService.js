@@ -145,7 +145,11 @@ Possible intents and their typical entities:
 - git_commit: Commit staged changes locally.
   - entities: commit_message (string)
 - git_status: Show the working tree status.
-  - entities: (none)
+- entities: (none)
+- git_revert_last_commit: Revert the changes introduced by the last commit.
+  - entities: no_edit (boolean, default false, to skip editor), commit_hash (string, optional, to revert a specific commit instead of HEAD)
+- git_merge_branch: Merge a specified branch into the current or another target branch.
+  - entities: branch_to_merge (string, required), target_branch (string, optional, defaults to current), squash (boolean, default false), no_ff (boolean, default false), commit_message (string, optional)
 - unknown: If the intent cannot be determined.
 
 Examples:
@@ -153,61 +157,126 @@ Examples:
 User query: "Create a new private repository called 'my-awesome-app' with description 'This is a test'."
 JSON response:
 {
-  "intent": "create_repo",
-  "entities": {
-    "repo_name": "my-awesome-app",
-    "description": "This is a test",
-    "private": true
-  }
+"intent": "create_repo",
+"entities": {
+  "repo_name": "my-awesome-app",
+  "description": "This is a test",
+  "private": true
+}
 }
 
 User query: "Push my latest work to the main branch with message 'feat: add login'."
 JSON response:
 {
-  "intent": "push_changes",
-  "entities": {
-    "commit_message": "feat: add login",
-    "branch": "main"
-  }
+"intent": "push_changes",
+"entities": {
+  "commit_message": "feat: add login",
+  "branch": "main"
+}
 }
 
 User query: "upload these changes"
 JSON response:
 {
-  "intent": "push_changes",
-  "entities": {}
+"intent": "push_changes",
+"entities": {}
 }
 
 User query: "i need to push this code to server"
 JSON response:
 {
-  "intent": "push_changes",
-  "entities": {}
+"intent": "push_changes",
+"entities": {}
 }
 
 User query: "save my work with commit 'refactor: improve performance'"
 JSON response:
 {
-  "intent": "git_commit",
-  "entities": {
-    "commit_message": "refactor: improve performance"
-  }
+"intent": "git_commit",
+"entities": {
+  "commit_message": "refactor: improve performance"
+}
 }
 
 User query: "add all files"
 JSON response:
 {
-  "intent": "git_add",
-  "entities": {
-    "files": "."
-  }
+"intent": "git_add",
+"entities": {
+  "files": "."
+}
 }
 
 User query: "show me what changed"
 JSON response:
 {
-  "intent": "git_status",
-  "entities": {}
+"intent": "git_status",
+"entities": {}
+}
+
+User query: "revert the last commit i made"
+JSON response:
+{
+"intent": "git_revert_last_commit",
+"entities": {}
+}
+
+User query: "undo my last changes"
+JSON response:
+{
+"intent": "git_revert_last_commit",
+"entities": {}
+}
+
+User query: "revert commit abc123xyz without editing the message"
+JSON response:
+{
+"intent": "git_revert_last_commit",
+"entities": {
+  "commit_hash": "abc123xyz",
+  "no_edit": true
+}
+}
+
+User query: "merge the feature-branch into develop"
+JSON response:
+{
+"intent": "git_merge_branch",
+"entities": {
+  "branch_to_merge": "feature-branch",
+  "target_branch": "develop"
+}
+}
+
+User query: "integrate new-feature"
+JSON response:
+{
+"intent": "git_merge_branch",
+"entities": {
+  "branch_to_merge": "new-feature"
+}
+}
+
+User query: "merge hotfix-123 into main and don't fast forward"
+JSON response:
+{
+"intent": "git_merge_branch",
+"entities": {
+  "branch_to_merge": "hotfix-123",
+  "target_branch": "main",
+  "no_ff": true
+}
+}
+
+User query: "Create a pull request from 'dev' to 'main' titled 'Release v1.0'"
+JSON response:
+{
+"intent": "create_pr",
+"entities": {
+  "head_branch": "dev",
+  "base_branch": "main",
+  "title": "Release v1.0"
+}
 }
 `;
 

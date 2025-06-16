@@ -143,7 +143,7 @@ export const logout = async (req, res) => {
   try {
     await storeToken('github_access_token', null); // Clear the specific token
     // Or, to clear all tokens: await clearAllTokens();
-    logger.info('User logout successful. GitHub access token cleared.', { service: 'AuthController' });
+    logger.info('User logout successful. GitHub access token cleared...', { service: 'AuthController' });
     res.send('Logout successful. Your session has been cleared.');
   } catch (error) {
     logger.error('Error during logout while clearing token:', { message: error.message, service: 'AuthController' });
